@@ -1,1309 +1,392 @@
 <!DOCTYPE html>
-<html lang="ja" class="h-full bg-slate-950 text-slate-100">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>夢株</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>株式ポートフォリオ管理</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@500;700;800&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Zen Kaku Gothic New"', '"Plus Jakarta Sans"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
-        .tab-btn.active { border-color: #3b82f6; color: #60a5fa; background-color: rgba(30, 58, 138, 0.3); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
     </style>
 </head>
-<body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 selection:bg-blue-600 selection:text-white max-w-md mx-auto border-x border-slate-800 shadow-2xl">
+<body class="bg-gray-100 text-gray-800 pb-12">
 
-    <!-- App Header Navbar -->
-    <header class="border-b border-slate-800 bg-slate-900/95 backdrop-blur sticky top-0 z-30 px-3 py-2.5">
-        <div class="flex items-center justify-between gap-2">
-            <!-- App Title -->
-            <div class="flex items-center gap-2 min-w-0">
-                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
-                    <i class="fa-solid fa-chart-line text-white text-sm"></i>
-                </div>
-                <h1 class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent whitespace-nowrap">
-                    夢株
-                </h1>
-            </div>
-
-            <!-- Top Action Buttons -->
-            <div class="flex items-center gap-1.5 shrink-0">
-                <button onclick="fetchAllLatestQuotes()" id="btn-fetch-all" class="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1 shadow-md shadow-blue-600/20 active:scale-95 whitespace-nowrap">
-                    <i class="fa-solid fa-rotate text-xs transition-transform" id="icon-refresh"></i>
-                    <span>一括更新</span>
-                </button>
-                <button onclick="openAddModal()" class="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1 shadow-md shadow-emerald-600/20 active:scale-95 whitespace-nowrap">
-                    <i class="fa-solid fa-plus text-xs"></i>
-                    <span>銘柄追加</span>
-                </button>
-                <button onclick="openBackupModal()" class="p-1.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700 active:scale-95" title="保存/復元">
-                    <i class="fa-solid fa-database px-1"></i>
-                </button>
-            </div>
+    <!-- ヘッダー -->
+    <header class="bg-slate-800 text-white p-4 shadow-md sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold"><i class="fa-solid font-bold fa-chart-line mr-2"></i>ポートフォリオ管理</h1>
+            <button id="btn-fetch-all" onclick="fetchAllLatestQuotes()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center transition">
+                <i id="icon-refresh" class="fa-solid fa-rotate mr-2"></i>一括更新
+            </button>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 w-full px-3 py-3 space-y-3 custom-scrollbar overflow-y-auto">
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
 
-        <!-- Global Filter Bar -->
-        <div class="flex items-center justify-between gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 shadow-md">
-            <button onclick="setMarketFilter('ALL')" id="filter-market-ALL" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition text-center whitespace-nowrap">すべて</button>
-            <button onclick="setMarketFilter('JP')" id="filter-market-JP" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition text-center whitespace-nowrap">🇯🇵 日本</button>
-            <button onclick="setMarketFilter('US')" id="filter-market-US" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition text-center whitespace-nowrap">🇺🇸 米国</button>
-            <button onclick="setMarketFilter('KR')" id="filter-market-KR" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition text-center whitespace-nowrap">🇰🇷 韓国</button>
-        </div>
+        <!-- トースト通知 -->
+        <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-        <!-- Portfolio Summary Section -->
-        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-xl space-y-2.5">
-            <!-- 保有株式 -->
-            <div class="flex items-center justify-between bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80">
-                <div class="font-extrabold text-sm text-blue-400 shrink-0 w-20 leading-snug">
-                    保有株式
-                </div>
-                <div class="text-right text-xs sm:text-sm space-y-1 flex-1 pl-2 font-mono">
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">取得総額</span><span class="font-semibold text-slate-200" id="sum-h-cost">￥0</span></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">評価総額</span><span class="font-semibold text-white" id="sum-h-val">￥0</span></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">評価損益</span><span class="font-bold" id="sum-h-pl">￥0 (0.00%)</span></div>
-                </div>
+        <!-- 資産サマリー -->
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <p class="text-xs text-gray-500 font-semibold">評価額合計</p>
+                <p id="summary-total-val" class="text-2xl font-bold text-gray-900">¥0</p>
             </div>
-
-            <!-- 売却株式 -->
-            <div class="flex items-center justify-between bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80">
-                <div class="font-extrabold text-sm text-indigo-300 shrink-0 w-20 leading-snug">
-                    売却株式
-                </div>
-                <div class="text-right text-xs sm:text-sm space-y-1 flex-1 pl-2 font-mono">
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">取得総額</span><span class="font-semibold text-slate-200" id="sum-s-cost">￥0</span></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">売却総額</span><span class="font-semibold text-white" id="sum-s-val">￥0</span></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">評価損益</span><span class="font-bold" id="sum-s-pl">￥0 (0.00%)</span></div>
-                </div>
+            <div>
+                <p class="text-xs text-gray-500 font-semibold">取得金額合計</p>
+                <p id="summary-total-cost" class="text-xl font-semibold text-gray-700">¥0</p>
             </div>
-
-            <!-- 全株式 -->
-            <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                <div class="font-extrabold text-sm text-emerald-400 shrink-0 w-20 leading-snug">
-                    全株式
-                </div>
-                <div class="text-right text-xs sm:text-sm space-y-1 flex-1 pl-2 font-mono">
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">取得総額</span><span class="font-semibold text-slate-200" id="sum-a-cost">￥0</span></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">評価総額</span><span class="font-semibold text-white" id="sum-a-val">￥0</span></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs font-sans">評価損益</span><span class="font-bold" id="sum-a-pl">￥0 (0.00%)</span></div>
-                </div>
+            <div>
+                <p class="text-xs text-gray-500 font-semibold">評価損益</p>
+                <p id="summary-total-profit" class="text-xl font-bold text-gray-500">¥0 (0.00%)</p>
             </div>
         </section>
 
-        <!-- Navigation Tabs -->
-        <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
-            <button onclick="switchTab('holdings')" id="tab-btn-holdings" class="tab-btn active flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 border border-transparent whitespace-nowrap">
-                <i class="fa-solid fa-box-archive"></i>
-                <span>保有一覧</span>
-                <span id="badge-holdings-count" class="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-950 text-blue-300 font-bold border border-blue-800">0</span>
-            </button>
-            <button onclick="switchTab('sold')" id="tab-btn-sold" class="tab-btn flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1 border border-transparent whitespace-nowrap">
-                <i class="fa-solid fa-receipt"></i>
-                <span>売却済み</span>
-                <span id="badge-sold-count" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-bold border border-slate-700">0</span>
-            </button>
-        </div>
-
-        <!-- SECTION 1: Holdings Stock List -->
-        <section id="section-holdings" class="space-y-3">
-            <div id="holdings-list-container" class="space-y-3"></div>
-            <div id="holdings-empty" class="hidden p-8 text-center text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">
-                <i class="fa-solid fa-folder-open text-3xl mb-2 opacity-40"></i>
-                <p class="text-xs font-bold">保有銘柄がありません</p>
-                <p class="text-[11px] mt-1 text-slate-400">「銘柄追加」ボタンから登録してください。</p>
-            </div>
+        <!-- 銘柄追加フォーム -->
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <h2 class="text-base font-bold mb-4 flex items-center"><i class="fa-solid fa-plus-circle mr-2 text-blue-600"></i>新規銘柄の追加</h2>
+            <form id="add-stock-form" onsubmit="handleAddStock(event)" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">市場</label>
+                    <select id="input-market" class="w-full border rounded p-2 text-sm bg-gray-50">
+                        <option value="JP">日本株 (JP)</option>
+                        <option value="US">米国株 (US)</option>
+                        <option value="KR">韓国株 (KR)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">銘柄コード</label>
+                    <input type="text" id="input-code" placeholder="例: 7203" required class="w-full border rounded p-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">保有株数</label>
+                    <input type="number" step="any" id="input-shares" placeholder="100" required class="w-full border rounded p-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">取得単価</label>
+                    <input type="number" step="any" id="input-buy-price" placeholder="2000" required class="w-full border rounded p-2 text-sm">
+                </div>
+                <div class="col-span-2 md:col-span-1 flex items-end">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded text-sm transition">追加</button>
+                </div>
+            </form>
         </section>
 
-        <!-- SECTION 2: Sold History List -->
-        <section id="section-sold" class="space-y-3 hidden">
-            <div id="sold-list-container" class="space-y-3"></div>
-            <div id="sold-empty" class="hidden p-8 text-center text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">
-                <i class="fa-solid fa-receipt text-3xl mb-2 opacity-40"></i>
-                <p class="text-xs font-bold">売却データはありません</p>
+        <!-- 保有銘柄一覧 -->
+        <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-base font-bold flex items-center"><i class="fa-solid fa-list mr-2 text-gray-600"></i>保有銘柄一覧</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-50 text-gray-500 font-semibold border-b">
+                        <tr>
+                            <th class="p-3">銘柄</th>
+                            <th class="p-3">保有数</th>
+                            <th class="p-3">取得単価</th>
+                            <th class="p-3">現在値</th>
+                            <th class="p-3">評価額(円)</th>
+                            <th class="p-3">損益(円)</th>
+                            <th class="p-3 text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="holdings-table-body" class="divide-y divide-gray-100">
+                        <!-- 動的生成 -->
+                    </tbody>
+                </table>
             </div>
         </section>
 
     </main>
 
-    <!-- MODAL 1: Add / Edit Stock Modal -->
-    <div id="modal-stock" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
-                <h3 class="text-sm font-bold text-white flex items-center gap-1.5" id="modal-stock-title">
-                    <i class="fa-solid fa-pen-to-square text-blue-400"></i> 銘柄の追加・編集
-                </h3>
-                <button onclick="closeModal('modal-stock')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <form id="form-stock" onsubmit="handleStockSubmit(event)" class="space-y-3 text-xs">
-                <input type="hidden" id="stock-id">
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-slate-400 font-semibold mb-1">市場 <span class="text-rose-500">*</span></label>
-                        <select id="stock-market" onchange="onMarketChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500">
-                            <option value="JP">🇯🇵 日本 (JPY)</option>
-                            <option value="US">🇺🇸 米国 (USD)</option>
-                            <option value="KR">🇰🇷 韓国 (KRW)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 font-semibold mb-1">コード <span class="text-rose-500">*</span></label>
-                        <input type="text" id="stock-code" required placeholder="1478, 7203, AAPL" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 uppercase">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-slate-400 font-semibold mb-1">銘柄名 <span class="text-rose-500">*</span></label>
-                    <input type="text" id="stock-name" required placeholder="例: NEXT FUNDS 日本高配当株" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500">
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-slate-400 font-semibold mb-1">取得日 <span class="text-rose-500">*</span></label>
-                        <input type="date" id="stock-acq-date" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 font-semibold mb-1">保有株数 <span class="text-rose-500">*</span></label>
-                        <input type="number" step="any" min="0.0001" id="stock-qty" required placeholder="100" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500">
-                    </div>
-                </div>
-
-                <div class="p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2">
-                    <div class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-1">取得時データ (単価・為替)</div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-slate-400 text-[10px] mb-0.5">取得株価 (<span class="symbol-currency">JPY</span>)</label>
-                            <input type="number" step="any" min="0" id="stock-acq-price" required placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white focus:outline-none focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-slate-400 text-[10px] mb-0.5">取得為替 (対円)</label>
-                            <input type="number" step="any" min="0" id="stock-acq-fx" required placeholder="1.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white focus:outline-none focus:border-blue-500">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-2.5 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2">
-                    <div class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-1">最新データ (現在株価・為替)</div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-slate-400 text-[10px] mb-0.5">現在株価 (<span class="symbol-currency">JPY</span>)</label>
-                            <input type="number" step="any" min="0" id="stock-cur-price" required placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white focus:outline-none focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-slate-400 text-[10px] mb-0.5">現在為替 (対円)</label>
-                            <input type="number" step="any" min="0" id="stock-cur-fx" required placeholder="1.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white focus:outline-none focus:border-blue-500">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('modal-stock')" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold">キャンセル</button>
-                    <button type="submit" class="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-semibold shadow-md shadow-blue-600/20">保存</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 2: Sell Modal -->
-    <div id="modal-sell" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 shadow-2xl relative">
-            <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
-                <div>
-                    <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
-                        <i class="fa-solid fa-receipt text-emerald-400"></i> 株の売却
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-0.5" id="sell-modal-stock-name">銘柄名</p>
-                </div>
-                <button onclick="closeModal('modal-sell')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <form id="form-sell" onsubmit="handleSellSubmit(event)" class="space-y-3 text-xs">
-                <input type="hidden" id="sell-stock-id">
-
-                <div class="p-2 bg-blue-950/30 border border-blue-900/50 rounded-xl space-y-1">
-                    <div class="flex justify-between text-slate-300">
-                        <span>現在保有数:</span>
-                        <span class="font-bold text-white" id="sell-current-qty">0</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-slate-400 font-semibold mb-1">売却日 <span class="text-rose-500">*</span></label>
-                        <input type="date" id="sell-date" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 font-semibold mb-1">売却株数 <span class="text-rose-500">*</span></label>
-                        <input type="number" step="any" min="0.0001" id="sell-qty" required oninput="calculateSellPreview()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-emerald-500">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-slate-400 font-semibold mb-1">売却単価 (<span id="sell-currency">JPY</span>) <span class="text-rose-500">*</span></label>
-                        <input type="number" step="any" min="0" id="sell-price" required oninput="calculateSellPreview()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 font-semibold mb-1">売却時為替 (対円) <span class="text-rose-500">*</span></label>
-                        <input type="number" step="any" min="0" id="sell-fx" required oninput="calculateSellPreview()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-emerald-500">
-                    </div>
-                </div>
-
-                <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 space-y-1 text-xs">
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">売却総額:</span>
-                        <span class="font-bold text-white font-mono" id="preview-sell-total-jpy">￥0</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">実現損益:</span>
-                        <span class="font-bold font-mono" id="preview-sell-pl-jpy">￥0</span>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('modal-sell')" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold">キャンセル</button>
-                    <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/20">売却確定</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 3: Backup / Restore Modal -->
-    <div id="modal-backup" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl relative">
-            <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
-                <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
-                    <i class="fa-solid fa-database text-indigo-400"></i> 保存と復元
-                </h3>
-                <button onclick="closeModal('modal-backup')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <div class="space-y-3 text-xs">
-                <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5">
-                    <div class="font-bold text-white">バックアップ保存</div>
-                    <button onclick="exportJSON()" class="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition">
-                        JSONファイルを保存
-                    </button>
-                </div>
-
-                <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5">
-                    <div class="font-bold text-white">復元（ファイル読込）</div>
-                    <input type="file" id="json-file-input" accept=".json" class="hidden" onchange="importJSON(event)">
-                    <button onclick="document.getElementById('json-file-input').click()" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition border border-slate-700">
-                        ファイルを選択して復元
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL 4: Confirm Modal -->
-    <div id="modal-confirm" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl relative text-center">
-            <div class="w-10 h-10 rounded-full bg-rose-950 text-rose-500 flex items-center justify-center mx-auto mb-2 text-base">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <h4 class="text-sm font-bold text-white mb-1" id="confirm-title">削除の確認</h4>
-            <p class="text-xs text-slate-400 mb-4" id="confirm-message">このデータを削除しますか？</p>
-            <div class="flex justify-center gap-2">
-                <button onclick="closeModal('modal-confirm')" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold">キャンセル</button>
-                <button id="btn-confirm-action" class="px-4 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold shadow-md shadow-rose-600/20">削除</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs px-3 pointer-events-none space-y-2"></div>
-
     <script>
-        // Global State Management
-        const STORAGE_KEY = 'yumekabu_checker_data_v2';
+        // ==========================================
+        // ★ 設定項目（ご自身の情報に変更してください）
+        // ==========================================
+        const GITHUB_OWNER = 'tangostin'; // あなたのGitHubユーザー名
+        const GITHUB_REPO = 'yumekabu-checker';       // あなたのリポジトリ名
+        const WORKFLOW_FILE = 'update-prices.yml';
 
+        // ==========================================
+        // アプリ状態管理
+        // ==========================================
         let appData = {
-            holdings: [],
-            soldHistory: []
+            holdings: []
         };
 
-        let currentTab = 'holdings';
-        let currentMarketFilter = 'ALL';
-
-        // Sample initial seed data including ETF 1478
-        const SAMPLE_DATA = {
-            holdings: [
-                {
-                    id: 'h_1',
-                    market: 'JP',
-                    code: '1478',
-                    name: 'iFreeETF 日本高配当株',
-                    acqDate: '2023-05-15',
-                    qty: 50,
-                    acqPrice: 2800,
-                    acqFx: 1.0,
-                    curPrice: 3450,
-                    curFx: 1.0
-                },
-                {
-                    id: 'h_2',
-                    market: 'JP',
-                    code: '7203',
-                    name: 'トヨタ自動車',
-                    acqDate: '2023-06-20',
-                    qty: 100,
-                    acqPrice: 2050,
-                    acqFx: 1.0,
-                    curPrice: 2850,
-                    curFx: 1.0
-                },
-                {
-                    id: 'h_3',
-                    market: 'US',
-                    code: 'AAPL',
-                    name: 'Apple Inc.',
-                    acqDate: '2023-08-10',
-                    qty: 15,
-                    acqPrice: 175.50,
-                    acqFx: 142.50,
-                    curPrice: 228.40,
-                    curFx: 155.20
-                }
-            ],
-            soldHistory: [
-                {
-                    id: 's_1',
-                    market: 'JP',
-                    code: '9984',
-                    name: 'ソフトバンクグループ',
-                    acqDate: '2023-02-10',
-                    sellDate: '2024-03-01',
-                    soldQty: 50,
-                    acqPrice: 5800,
-                    acqFx: 1.0,
-                    sellPrice: 8200,
-                    sellFx: 1.0
-                }
-            ]
-        };
-
+        // 初期化処理
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
-            document.getElementById('stock-acq-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('sell-date').value = new Date().toISOString().split('T')[0];
             renderApp();
         });
 
         function loadData() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
+            const saved = localStorage.getItem('portfolio_app_data');
+            if (saved) {
+                try {
                     appData = JSON.parse(saved);
-                } else {
-                    appData = JSON.parse(JSON.stringify(SAMPLE_DATA));
-                    saveData();
+                } catch (e) {
+                    console.error('Failed to parse local storage data');
                 }
-            } catch (e) {
-                appData = JSON.parse(JSON.stringify(SAMPLE_DATA));
             }
         }
 
         function saveData() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-            } catch (e) {
-                showToast('保存エラーが発生しました', 'error');
-            }
+            localStorage.setItem('portfolio_app_data', JSON.stringify(appData));
         }
 
-        function formatNumber(num, decimals = 2) {
-            if (num === null || num === undefined || isNaN(num)) return '0';
-            return new Intl.NumberFormat('ja-JP', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: decimals
-            }).format(num);
+        // ==========================================
+        // 銘柄の追加・削除
+        // ==========================================
+        function handleAddStock(e) {
+            e.preventDefault();
+            const market = document.getElementById('input-market').value;
+            const code = document.getElementById('input-code').value.trim();
+            const shares = parseFloat(document.getElementById('input-shares').value);
+            const buyPrice = parseFloat(document.getElementById('input-buy-price').value);
+
+            if (!code || isNaN(shares) || isNaN(buyPrice)) return;
+
+            const newHolding = {
+                id: Date.now().toString(),
+                market,
+                code,
+                shares,
+                buyPrice,
+                curPrice: buyPrice, // 初期値は取得単価
+                curFx: 1.0
+            };
+
+            appData.holdings.push(newHolding);
+            saveData();
+            renderApp();
+
+            // フォームリセット
+            document.getElementById('input-code').value = '';
+            document.getElementById('input-shares').value = '';
+            document.getElementById('input-buy-price').value = '';
+            showToast('銘柄を追加しました');
         }
 
-        function formatDateShort(dateStr) {
-            if (!dateStr) return '';
-            return dateStr.replace(/-/g, '/');
+        function deleteHolding(id) {
+            if (!confirm('この銘柄を削除しますか？')) return;
+            appData.holdings = appData.holdings.filter(item => item.id !== id);
+            saveData();
+            renderApp();
+            showToast('銘柄を削除しました');
         }
 
-        function formatJPY(num) {
-            if (isNaN(num)) return '￥0';
-            const val = Math.round(num);
-            const prefix = val < 0 ? '-￥' : '￥';
-            return prefix + Math.abs(val).toLocaleString('ja-JP');
-        }
-
-        function formatForeignSymbol(num, market) {
-            if (isNaN(num)) return '0';
-            const formatted = formatNumber(num, market === 'KR' ? 0 : 2);
-            switch(market) {
-                case 'US': return `$${formatted}`;
-                case 'KR': return `₩${formatted}`;
-                case 'JP': return `￥${formatted}`;
-                default: return formatted;
-            }
-        }
-
-        function formatPercent(num) {
-            if (isNaN(num) || !isFinite(num)) return '0.00%';
-            const prefix = num > 0 ? '+' : '';
-            return `${prefix}${num.toFixed(2)}%`;
-        }
-
-        function getMarketCurrency(market) {
-            switch(market) {
-                case 'JP': return 'JPY';
-                case 'US': return 'USD';
-                case 'KR': return 'KRW';
-                default: return 'JPY';
-            }
-        }
-
-        function getMarketBadgeHTML(market) {
-            switch(market) {
-                case 'JP': return `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800/80 shrink-0">🇯🇵 日本</span>`;
-                case 'US': return `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800/80 shrink-0">🇺🇸 米国</span>`;
-                case 'KR': return `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800/80 shrink-0">🇰🇷 韓国</span>`;
-                default: return market;
-            }
-        }
-
-        const PILL_BLUE_CLASS = "w-20 shrink-0 py-1 px-2 rounded-lg bg-blue-950 text-blue-300 border border-blue-800/80 text-center font-bold text-[11px]";
-
-        function calcCostJPY(price, qty, fx) { return price * qty * fx; }
-        function calcValueJPY(price, qty, fx) { return price * qty * fx; }
-
+        // ==========================================
+        // 画面描画
+        // ==========================================
         function renderApp() {
-            renderSummarySection();
-            renderHoldingsList();
-            renderSoldList();
-            updateFilterButtonUI();
-        }
+            const tbody = document.getElementById('holdings-table-body');
+            tbody.innerHTML = '';
 
-        function renderSummarySection() {
-            const filteredHoldings = appData.holdings.filter(h => currentMarketFilter === 'ALL' || h.market === currentMarketFilter);
-            const filteredSold = appData.soldHistory.filter(s => currentMarketFilter === 'ALL' || s.market === currentMarketFilter);
+            let totalVal = 0;
+            let totalCost = 0;
 
-            let hCostJPY = 0, hValJPY = 0, hPlJPY = 0;
-            filteredHoldings.forEach(item => {
-                const costJ = calcCostJPY(item.acqPrice, item.qty, item.acqFx);
-                const valJ = calcValueJPY(item.curPrice, item.qty, item.curFx);
-                hCostJPY += costJ;
-                hValJPY += valJ;
-                hPlJPY += (valJ - costJ);
-            });
+            if (appData.holdings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">保有銘柄が登録されていません</td></tr>`;
+            } else {
+                appData.holdings.forEach(item => {
+                    const fx = (item.market === 'JP') ? 1.0 : (item.curFx || 1.0);
+                    const currentValJPY = item.shares * item.curPrice * fx;
+                    const costValJPY = item.shares * item.buyPrice * fx;
+                    const profitJPY = currentValJPY - costValJPY;
+                    const profitRate = costValJPY > 0 ? (profitJPY / costValJPY) * 100 : 0;
 
-            let sCostJPY = 0, sValJPY = 0, sPlJPY = 0;
-            filteredSold.forEach(item => {
-                const costJ = calcCostJPY(item.acqPrice, item.soldQty, item.acqFx);
-                const valJ = calcValueJPY(item.sellPrice, item.soldQty, item.sellFx);
-                sCostJPY += costJ;
-                sValJPY += valJ;
-                sPlJPY += (valJ - costJ);
-            });
+                    totalVal += currentValJPY;
+                    totalCost += costValJPY;
 
-            const aCostJPY = hCostJPY + sCostJPY;
-            const aValJPY = hValJPY + sValJPY;
-            const aPlJPY = hPlJPY + sPlJPY;
+                    const profitClass = profitJPY >= 0 ? 'text-emerald-600' : 'text-rose-600';
+                    const currencySymbol = item.market === 'US' ? '$' : (item.market === 'KR' ? '₩' : '¥');
 
-            const hPct = hCostJPY > 0 ? (hPlJPY / hCostJPY) * 100 : 0;
-            document.getElementById('sum-h-cost').innerText = formatJPY(hCostJPY);
-            document.getElementById('sum-h-val').innerText = formatJPY(hValJPY);
-            setPLStyle('sum-h-pl', hPlJPY, hPct);
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50';
+                    tr.innerHTML = `
+                        <td class="p-3 font-semibold">
+                            <span class="text-xs px-1.5 py-0.5 rounded mr-1 ${item.market === 'JP' ? 'bg-blue-100 text-blue-800' : (item.market === 'US' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800')}">${item.market}</span>
+                            ${item.code}
+                        </td>
+                        <td class="p-3">${item.shares.toLocaleString()}</td>
+                        <td class="p-3">${currencySymbol}${item.buyPrice.toLocaleString()}</td>
+                        <td class="p-3">${currencySymbol}${item.curPrice.toLocaleString()}</td>
+                        <td class="p-3 font-semibold">¥${Math.round(currentValJPY).toLocaleString()}</td>
+                        <td class="p-3 font-semibold ${profitClass}">
+                            ¥${Math.round(profitJPY).toLocaleString()}<br>
+                            <span class="text-xs">(${profitRate >= 0 ? '+' : ''}${profitRate.toFixed(2)}%)</span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <button onclick="deleteHolding('${item.id}')" class="text-gray-400 hover:text-rose-600 transition p-1">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
 
-            const sPct = sCostJPY > 0 ? (sPlJPY / sCostJPY) * 100 : 0;
-            document.getElementById('sum-s-cost').innerText = formatJPY(sCostJPY);
-            document.getElementById('sum-s-val').innerText = formatJPY(sValJPY);
-            setPLStyle('sum-s-pl', sPlJPY, sPct);
+            // サマリー計算
+            const totalProfit = totalVal - totalCost;
+            const totalProfitRate = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
 
-            const aPct = aCostJPY > 0 ? (aPlJPY / aCostJPY) * 100 : 0;
-            document.getElementById('sum-a-cost').innerText = formatJPY(aCostJPY);
-            document.getElementById('sum-a-val').innerText = formatJPY(aValJPY);
-            setPLStyle('sum-a-pl', aPlJPY, aPct);
-
-            document.getElementById('badge-holdings-count').innerText = filteredHoldings.length;
-            document.getElementById('badge-sold-count').innerText = filteredSold.length;
-        }
-
-        function setPLStyle(elementId, val, pct) {
-            const el = document.getElementById(elementId);
-            const prefix = val > 0 ? '+' : '';
-            const formatted = formatJPY(val);
-            const pctStr = formatPercent(pct);
+            document.getElementById('summary-total-val').textContent = `¥${Math.round(totalVal).toLocaleString()}`;
+            document.getElementById('summary-total-cost').textContent = `¥${Math.round(totalCost).toLocaleString()}`;
             
-            el.innerText = `${prefix}${formatted} (${pctStr})`;
-            if (val > 0) el.className = 'font-bold text-emerald-400';
-            else if (val < 0) el.className = 'font-bold text-rose-400';
-            else el.className = 'font-bold text-slate-300';
+            const profitElem = document.getElementById('summary-total-profit');
+            profitElem.textContent = `¥${Math.round(totalProfit).toLocaleString()} (${totalProfitRate >= 0 ? '+' : ''}${totalProfitRate.toFixed(2)}%)`;
+            profitElem.className = `text-xl font-bold ${totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
         }
 
-        function renderHoldingsList() {
-            const container = document.getElementById('holdings-list-container');
-            const emptyState = document.getElementById('holdings-empty');
-            container.innerHTML = '';
-
-            const filtered = appData.holdings.filter(item => currentMarketFilter === 'ALL' || item.market === currentMarketFilter);
-
-            if (filtered.length === 0) {
-                emptyState.classList.remove('hidden');
-                return;
-            } else {
-                emptyState.classList.add('hidden');
-            }
-
-            filtered.forEach(item => {
-                const acqCostForeign = item.acqPrice * item.qty;
-                const curValForeign = item.curPrice * item.qty;
-                const foreignPL = (item.curPrice - item.acqPrice) * item.qty;
-                const foreignPct = acqCostForeign > 0 ? (foreignPL / acqCostForeign) * 100 : 0;
-
-                const acqCostJPY = calcCostJPY(item.acqPrice, item.qty, item.acqFx);
-                const curValJPY = calcValueJPY(item.curPrice, item.qty, item.curFx);
-                const jpyPL = curValJPY - acqCostJPY;
-                const jpyPct = acqCostJPY > 0 ? (jpyPL / acqCostJPY) * 100 : 0;
-
-                const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5 shadow-lg";
-
-                card.innerHTML = `
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                        <div class="flex items-center gap-1.5 min-w-0 pr-1">
-                            ${getMarketBadgeHTML(item.market)}
-                            <span class="font-extrabold text-white text-sm sm:text-base truncate">${escapeHTML(item.name)}</span>
-                            <span class="bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded-md font-mono text-[11px] border border-slate-700 shrink-0">${escapeHTML(item.code)}</span>
-                        </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                            <button onclick="openSellModal('${item.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 transition text-xs font-bold whitespace-nowrap">
-                                売却
-                            </button>
-                            <button onclick="openEditModal('${item.id}')" class="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700">
-                                <i class="fa-solid fa-pen text-xs px-0.5"></i>
-                            </button>
-                            <button onclick="confirmDeleteStock('${item.id}')" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 border border-slate-700">
-                                <i class="fa-solid fa-trash text-xs px-0.5"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="space-y-1.5 text-xs">
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">保有株数</span>
-                            <div class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-white text-xs">
-                                ${formatNumber(item.qty, 4)} 株 <span class="text-slate-400 font-sans font-normal text-[11px] ml-1">(${formatDateShort(item.acqDate)} 取得)</span>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">株価</span>
-                            <div class="grid grid-cols-2 gap-1.5 flex-1">
-                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-slate-400">取得</span>
-                                    <span class="font-bold text-slate-200 font-mono text-right truncate">${formatForeignSymbol(item.acqPrice, item.market)}</span>
-                                </div>
-                                <div class="bg-slate-950/80 border border-blue-900/60 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-blue-400 font-bold">現在</span>
-                                    <span class="font-bold text-blue-400 font-mono text-right truncate">${formatForeignSymbol(item.curPrice, item.market)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">為替</span>
-                            <div class="grid grid-cols-2 gap-1.5 flex-1">
-                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-slate-400">取得</span>
-                                    <span class="font-bold text-slate-200 font-mono text-right truncate">${item.market === 'JP' ? '1.0' : formatNumber(item.acqFx, 2)}</span>
-                                </div>
-                                <div class="bg-slate-950/80 border border-blue-900/60 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-blue-400 font-bold">現在</span>
-                                    <span class="font-bold text-blue-400 font-mono text-right truncate">${item.market === 'JP' ? '1.0' : formatNumber(item.curFx, 2)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">評価額</span>
-                            <div class="grid grid-cols-2 gap-1.5 flex-1">
-                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-slate-400">取得</span>
-                                    <span class="font-bold text-slate-200 font-mono text-right truncate">${formatForeignSymbol(acqCostForeign, item.market)}</span>
-                                </div>
-                                <div class="bg-slate-950/80 border border-blue-900/60 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-blue-400 font-bold">現在</span>
-                                    <span class="font-bold text-blue-400 font-mono text-right truncate">${formatForeignSymbol(curValForeign, item.market)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">評価損益</span>
-                            <div class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-xs ${foreignPL >= 0 ? 'text-emerald-400' : 'text-rose-400'} truncate">
-                                ${foreignPL >= 0 ? '+' : ''}${formatForeignSymbol(foreignPL, item.market)} (${formatPercent(foreignPct)})
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">評価額(円)</span>
-                            <div class="grid grid-cols-2 gap-1.5 flex-1">
-                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-slate-400">取得</span>
-                                    <span class="font-bold text-slate-200 font-mono text-right truncate">${formatJPY(acqCostJPY)}</span>
-                                </div>
-                                <div class="bg-slate-950/80 border border-blue-900/60 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-blue-400 font-bold">現在</span>
-                                    <span class="font-bold text-blue-400 font-mono text-right truncate">${formatJPY(curValJPY)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">損益(円)</span>
-                            <div class="flex-1 bg-slate-950/80 border ${jpyPL >= 0 ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-rose-500/30 bg-rose-950/10'} rounded-lg px-2.5 py-1 text-right font-mono font-extrabold text-xs sm:text-sm ${jpyPL >= 0 ? 'text-emerald-400' : 'text-rose-400'} truncate">
-                                ${jpyPL >= 0 ? '+' : ''}${formatJPY(jpyPL)} (${formatPercent(jpyPct)})
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function renderSoldList() {
-            const container = document.getElementById('sold-list-container');
-            const emptyState = document.getElementById('sold-empty');
-            container.innerHTML = '';
-
-            const filtered = appData.soldHistory.filter(item => currentMarketFilter === 'ALL' || item.market === currentMarketFilter);
-
-            if (filtered.length === 0) {
-                emptyState.classList.remove('hidden');
-                return;
-            } else {
-                emptyState.classList.add('hidden');
-            }
-
-            filtered.forEach(item => {
-                const acqCostForeign = item.acqPrice * item.soldQty;
-                const sellTotalForeign = item.sellPrice * item.soldQty;
-                const foreignPL = (item.sellPrice - item.acqPrice) * item.soldQty;
-                const foreignPct = acqCostForeign > 0 ? (foreignPL / acqCostForeign) * 100 : 0;
-
-                const acqCostJPY = calcCostJPY(item.acqPrice, item.soldQty, item.acqFx);
-                const sellTotalJPY = calcValueJPY(item.sellPrice, item.soldQty, item.sellFx);
-                const jpyPL = sellTotalJPY - acqCostJPY;
-                const jpyPct = acqCostJPY > 0 ? (jpyPL / acqCostJPY) * 100 : 0;
-
-                const card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5 shadow-lg opacity-90";
-
-                card.innerHTML = `
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                        <div class="flex items-center gap-1.5 min-w-0 pr-1">
-                            ${getMarketBadgeHTML(item.market)}
-                            <span class="font-extrabold text-white text-sm sm:text-base truncate">${escapeHTML(item.name)}</span>
-                            <span class="text-[10px] text-emerald-400 font-semibold shrink-0">売却: ${formatDateShort(item.sellDate)}</span>
-                        </div>
-                        <button onclick="confirmDeleteSold('${item.id}')" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 border border-slate-700 shrink-0">
-                            <i class="fa-solid fa-trash text-xs px-0.5"></i>
-                        </button>
-                    </div>
-
-                    <div class="space-y-1.5 text-xs">
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">売却株数</span>
-                            <div class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-white text-xs">
-                                ${formatNumber(item.soldQty, 4)} 株 <span class="text-slate-400 font-sans font-normal text-[11px] ml-1">(${formatDateShort(item.acqDate)} 取得)</span>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">株価</span>
-                            <div class="grid grid-cols-2 gap-1.5 flex-1">
-                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-slate-400">取得</span>
-                                    <span class="font-bold text-slate-200 font-mono text-right truncate">${formatForeignSymbol(item.acqPrice, item.market)}</span>
-                                </div>
-                                <div class="bg-slate-950/80 border border-blue-900/60 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-blue-400 font-bold">売却</span>
-                                    <span class="font-bold text-blue-400 font-mono text-right truncate">${formatForeignSymbol(item.sellPrice, item.market)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">為替</span>
-                            <div class="grid grid-cols-2 gap-1.5 flex-1">
-                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-slate-400">取得</span>
-                                    <span class="font-bold text-slate-200 font-mono text-right truncate">${item.market === 'JP' ? '1.0' : formatNumber(item.acqFx, 2)}</span>
-                                </div>
-                                <div class="bg-slate-950/80 border border-blue-900/60 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-blue-400 font-bold">売却</span>
-                                    <span class="font-bold text-blue-400 font-mono text-right truncate">${item.market === 'JP' ? '1.0' : formatNumber(item.sellFx, 2)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">売却額</span>
-                            <div class="grid grid-cols-2 gap-1.5 flex-1">
-                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-slate-400">取得</span>
-                                    <span class="font-bold text-slate-200 font-mono text-right truncate">${formatForeignSymbol(acqCostForeign, item.market)}</span>
-                                </div>
-                                <div class="bg-slate-950/80 border border-blue-900/60 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-blue-400 font-bold">売却</span>
-                                    <span class="font-bold text-blue-400 font-mono text-right truncate">${formatForeignSymbol(sellTotalForeign, item.market)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">実現損益</span>
-                            <div class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-xs ${foreignPL >= 0 ? 'text-emerald-400' : 'text-rose-400'} truncate">
-                                ${foreignPL >= 0 ? '+' : ''}${formatForeignSymbol(foreignPL, item.market)} (${formatPercent(foreignPct)})
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">売却額(円)</span>
-                            <div class="grid grid-cols-2 gap-1.5 flex-1">
-                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-slate-400">取得</span>
-                                    <span class="font-bold text-slate-200 font-mono text-right truncate">${formatJPY(acqCostJPY)}</span>
-                                </div>
-                                <div class="bg-slate-950/80 border border-blue-900/60 rounded-lg px-2 py-1 flex justify-between items-center text-[11px]">
-                                    <span class="text-blue-400 font-bold">売却</span>
-                                    <span class="font-bold text-blue-400 font-mono text-right truncate">${formatJPY(sellTotalJPY)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <span class="${PILL_BLUE_CLASS}">損益(円)</span>
-                            <div class="flex-1 bg-slate-950/80 border ${jpyPL >= 0 ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-rose-500/30 bg-rose-950/10'} rounded-lg px-2.5 py-1 text-right font-mono font-extrabold text-xs sm:text-sm ${jpyPL >= 0 ? 'text-emerald-400' : 'text-rose-400'} truncate">
-                                ${jpyPL >= 0 ? '+' : ''}${formatJPY(jpyPL)} (${formatPercent(jpyPct)})
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function switchTab(tab) {
-            currentTab = tab;
-            const tabHoldings = document.getElementById('tab-btn-holdings');
-            const tabSold = document.getElementById('tab-btn-sold');
-            const secHoldings = document.getElementById('section-holdings');
-            const secSold = document.getElementById('section-sold');
-
-            if (tab === 'holdings') {
-                tabHoldings.classList.add('active');
-                tabSold.classList.remove('active');
-                secHoldings.classList.remove('hidden');
-                secSold.classList.add('hidden');
-            } else {
-                tabSold.classList.add('active');
-                tabHoldings.classList.remove('active');
-                secSold.classList.remove('hidden');
-                secHoldings.classList.add('hidden');
-            }
-        }
-
-        function setMarketFilter(market) {
-            currentMarketFilter = market;
-            renderApp();
-        }
-
-        function updateFilterButtonUI() {
-            ['ALL', 'JP', 'US', 'KR'].forEach(m => {
-                const btn = document.getElementById(`filter-market-${m}`);
-                if (m === currentMarketFilter) {
-                    btn.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition text-center whitespace-nowrap shadow-md shadow-blue-600/20';
-                } else {
-                    btn.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-center whitespace-nowrap';
-                }
-            });
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-        function openAddModal() {
-            document.getElementById('modal-stock-title').innerHTML = `<i class="fa-solid fa-plus text-emerald-400"></i> 保有銘柄の新規追加`;
-            document.getElementById('form-stock').reset();
-            document.getElementById('stock-id').value = '';
-            document.getElementById('stock-market').value = 'JP';
-            document.getElementById('stock-acq-date').value = new Date().toISOString().split('T')[0];
-            onMarketChange();
-            openModal('modal-stock');
-        }
-
-        function openEditModal(id) {
-            const stock = appData.holdings.find(h => h.id === id);
-            if (!stock) return;
-
-            document.getElementById('modal-stock-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-400"></i> 銘柄情報の編集`;
-            document.getElementById('stock-id').value = stock.id;
-            document.getElementById('stock-market').value = stock.market;
-            document.getElementById('stock-code').value = stock.code;
-            document.getElementById('stock-name').value = stock.name;
-            document.getElementById('stock-acq-date').value = stock.acqDate;
-            document.getElementById('stock-qty').value = stock.qty;
-            document.getElementById('stock-acq-price').value = stock.acqPrice;
-            document.getElementById('stock-acq-fx').value = stock.acqFx;
-            document.getElementById('stock-cur-price').value = stock.curPrice;
-            document.getElementById('stock-cur-fx').value = stock.curFx;
-
-            onMarketChange();
-            openModal('modal-stock');
-        }
-
-        function onMarketChange() {
-            const market = document.getElementById('stock-market').value;
-            const currency = getMarketCurrency(market);
-
-            document.querySelectorAll('.symbol-currency').forEach(el => el.innerText = currency);
-
-            const acqFxInput = document.getElementById('stock-acq-fx');
-            const curFxInput = document.getElementById('stock-cur-fx');
-
-            if (market === 'JP') {
-                acqFxInput.value = '1.0';
-                curFxInput.value = '1.0';
-                acqFxInput.readOnly = true;
-                curFxInput.readOnly = true;
-            } else {
-                acqFxInput.readOnly = false;
-                curFxInput.readOnly = false;
-                if (market === 'US') {
-                    if (acqFxInput.value === '1.0' || !acqFxInput.value) acqFxInput.value = '155.0';
-                    if (curFxInput.value === '1.0' || !curFxInput.value) curFxInput.value = '155.0';
-                } else if (market === 'KR') {
-                    if (acqFxInput.value === '1.0' || !acqFxInput.value) acqFxInput.value = '0.11';
-                    if (curFxInput.value === '1.0' || !curFxInput.value) curFxInput.value = '0.11';
+        // ==========================================
+        // GitHub Actions 連携 & 株価取得
+        // ==========================================
+        function getGithubToken() {
+            let token = localStorage.getItem('gh_pat');
+            if (!token) {
+                token = prompt('GitHub Personal Access Tokenを入力してください（初回のみ）:');
+                if (token) {
+                    token = token.trim();
+                    localStorage.setItem('gh_pat', token);
                 }
             }
+            return token;
         }
 
-        function handleStockSubmit(e) {
-            e.preventDefault();
-            const id = document.getElementById('stock-id').value;
-            const market = document.getElementById('stock-market').value;
-            const code = document.getElementById('stock-code').value.trim().toUpperCase();
-            const name = document.getElementById('stock-name').value.trim();
-            const acqDate = document.getElementById('stock-acq-date').value;
-            const qty = parseFloat(document.getElementById('stock-qty').value);
-            const acqPrice = parseFloat(document.getElementById('stock-acq-price').value);
-            const acqFx = parseFloat(document.getElementById('stock-acq-fx').value);
-            const curPrice = parseFloat(document.getElementById('stock-cur-price').value);
-            const curFx = parseFloat(document.getElementById('stock-cur-fx').value);
+        async function triggerGitHubAction() {
+            const token = getGithubToken();
+            if (!token) throw new Error('トークンが入力されませんでした');
 
-            if (id) {
-                const index = appData.holdings.findIndex(h => h.id === id);
-                if (index !== -1) {
-                    appData.holdings[index] = { id, market, code, name, acqDate, qty, acqPrice, acqFx, curPrice, curFx };
-                    showToast('銘柄情報を更新しました');
-                }
-            } else {
-                const newStock = {
-                    id: 'h_' + Date.now(),
-                    market, code, name, acqDate, qty, acqPrice, acqFx, curPrice, curFx
-                };
-                appData.holdings.unshift(newStock);
-                showToast('銘柄を追加しました');
-            }
+            const targetStocks = [];
+            const seen = new Set();
 
-            saveData();
-            renderApp();
-            closeModal('modal-stock');
-        }
-
-        function openSellModal(id) {
-            const stock = appData.holdings.find(h => h.id === id);
-            if (!stock) return;
-
-            document.getElementById('sell-stock-id').value = stock.id;
-            document.getElementById('sell-modal-stock-name').innerText = `${stock.name} (${stock.code})`;
-            document.getElementById('sell-current-qty').innerText = formatNumber(stock.qty, 4) + '株';
-            document.getElementById('sell-currency').innerText = getMarketCurrency(stock.market);
-
-            document.getElementById('sell-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('sell-qty').value = stock.qty;
-            document.getElementById('sell-price').value = stock.curPrice;
-            document.getElementById('sell-fx').value = stock.curFx;
-
-            calculateSellPreview();
-            openModal('modal-sell');
-        }
-
-        function calculateSellPreview() {
-            const stockId = document.getElementById('sell-stock-id').value;
-            const stock = appData.holdings.find(h => h.id === stockId);
-            if (!stock) return;
-
-            const sellQty = parseFloat(document.getElementById('sell-qty').value) || 0;
-            const sellPrice = parseFloat(document.getElementById('sell-price').value) || 0;
-            const sellFx = parseFloat(document.getElementById('sell-fx').value) || 1.0;
-
-            const sellTotalJPY = calcValueJPY(sellPrice, sellQty, sellFx);
-            const acqCostJPY = calcCostJPY(stock.acqPrice, sellQty, stock.acqFx);
-            const jpyPL = sellTotalJPY - acqCostJPY;
-
-            document.getElementById('preview-sell-total-jpy').innerText = formatJPY(sellTotalJPY);
-            const jpyEl = document.getElementById('preview-sell-pl-jpy');
-            jpyEl.innerText = `${jpyPL >= 0 ? '+' : ''}${formatJPY(jpyPL)}`;
-            jpyEl.className = jpyPL >= 0 ? 'font-bold text-emerald-400 font-mono' : 'font-bold text-rose-400 font-mono';
-        }
-
-        function handleSellSubmit(e) {
-            e.preventDefault();
-            const stockId = document.getElementById('sell-stock-id').value;
-            const stockIndex = appData.holdings.findIndex(h => h.id === stockId);
-            if (stockIndex === -1) return;
-
-            const stock = appData.holdings[stockIndex];
-            const sellDate = document.getElementById('sell-date').value;
-            const soldQty = parseFloat(document.getElementById('sell-qty').value);
-            const sellPrice = parseFloat(document.getElementById('sell-price').value);
-            const sellFx = parseFloat(document.getElementById('sell-fx').value);
-
-            if (soldQty <= 0 || soldQty > stock.qty) {
-                showToast('売却株数が不正です', 'error');
-                return;
-            }
-
-            const soldRecord = {
-                id: 's_' + Date.now(),
-                market: stock.market,
-                code: stock.code,
-                name: stock.name,
-                acqDate: stock.acqDate,
-                sellDate: sellDate,
-                soldQty: soldQty,
-                acqPrice: stock.acqPrice,
-                acqFx: stock.acqFx,
-                sellPrice: sellPrice,
-                sellFx: sellFx
-            };
-
-            appData.soldHistory.unshift(soldRecord);
-
-            if (Math.abs(stock.qty - soldQty) < 0.00001) {
-                appData.holdings.splice(stockIndex, 1);
-                showToast(`「${stock.name}」を全額売却しました`);
-            } else {
-                stock.qty -= soldQty;
-                showToast(`「${stock.name}」を一部売却しました`);
-            }
-
-            saveData();
-            renderApp();
-            closeModal('modal-sell');
-        }
-
-        function confirmDeleteStock(id) {
-            const stock = appData.holdings.find(h => h.id === id);
-            if (!stock) return;
-
-            document.getElementById('confirm-title').innerText = '保有銘柄の削除';
-            document.getElementById('confirm-message').innerText = `「${stock.name}」を削除しますか？`;
-            document.getElementById('btn-confirm-action').onclick = () => {
-                appData.holdings = appData.holdings.filter(h => h.id !== id);
-                saveData();
-                renderApp();
-                closeModal('modal-confirm');
-                showToast('削除しました');
-            };
-            openModal('modal-confirm');
-        }
-
-        function confirmDeleteSold(id) {
-            const sold = appData.soldHistory.find(s => s.id === id);
-            if (!sold) return;
-
-            document.getElementById('confirm-title').innerText = '売却履歴の削除';
-            document.getElementById('confirm-message').innerText = `「${sold.name}」の売却履歴を削除しますか？`;
-            document.getElementById('btn-confirm-action').onclick = () => {
-                appData.soldHistory = appData.soldHistory.filter(s => s.id !== id);
-                saveData();
-                renderApp();
-                closeModal('modal-confirm');
-                showToast('削除しました');
-            };
-            openModal('modal-confirm');
-        }
-
-        async function fetchStockQuote(code, market) {
-            let cleanCode = code.trim().toUpperCase();
-            let yahooSymbol = cleanCode;
-
-            if (market === 'JP') {
-                if (!cleanCode.includes('.')) yahooSymbol = cleanCode + '.T';
-            } else if (market === 'KR') {
-                if (!cleanCode.includes('.')) yahooSymbol = cleanCode + '.KS';
-            }
-
-            // Source 1: Yahoo Finance Chart API with CORS Proxies & Fallbacks
-            const yahooPrice = await fetchYahooQuote(yahooSymbol);
-            if (yahooPrice !== null && yahooPrice > 0) return yahooPrice;
-
-            // Source 2: Stooq API Fallback (Enhanced format mapping)
-            let stooqSymbol = cleanCode.toLowerCase();
-            if (market === 'JP') stooqSymbol += '.jp';
-            else if (market === 'US') stooqSymbol += '.us';
-            else if (market === 'KR') stooqSymbol += '.kr';
-
-            const stooqPrice = await fetchStooqQuote(stooqSymbol);
-            if (stooqPrice !== null && stooqPrice > 0) return stooqPrice;
-
-            return null;
-        }
-
-        // Robust Yahoo Fetcher using multiple Yahoo Hosts + Multiple High-Speed CORS Proxies
-        async function fetchYahooQuote(symbol) {
-            const yahooHosts = [
-                `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`,
-                `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`
-            ];
-
-            const proxyGenerators = [
-                url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-                url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-                url => `https://corsproxy.org/?${encodeURIComponent(url)}`
-            ];
-
-            for (const targetUrl of yahooHosts) {
-                for (const getProxyUrl of proxyGenerators) {
-                    try {
-                        const proxyUrl = getProxyUrl(targetUrl);
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 3500); // Fast 3.5s timeout per attempt
-
-                        const res = await fetch(proxyUrl, { signal: controller.signal });
-                        clearTimeout(timeoutId);
-
-                        if (res.ok) {
-                            const data = await res.json();
-                            const result = data?.chart?.result?.[0];
-                            if (result) {
-                                const meta = result.meta;
-                                if (meta?.regularMarketPrice && meta.regularMarketPrice > 0) {
-                                    return meta.regularMarketPrice;
-                                }
-                                if (meta?.chartPreviousClose && meta.chartPreviousClose > 0) {
-                                    return meta.chartPreviousClose;
-                                }
-                                if (meta?.previousClose && meta.previousClose > 0) {
-                                    return meta.previousClose;
-                                }
-                                const closes = result.indicators?.quote?.[0]?.close;
-                                if (Array.isArray(closes)) {
-                                    const validCloses = closes.filter(c => c !== null && c !== undefined && typeof c === 'number' && c > 0);
-                                    if (validCloses.length > 0) return validCloses[validCloses.length - 1];
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        // Suppress timeout errors and try next proxy
+            if (appData && appData.holdings && Array.isArray(appData.holdings)) {
+                appData.holdings.forEach(item => {
+                    const key = `${item.market}_${item.code}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        targetStocks.push({ code: item.code, market: item.market });
                     }
-                }
+                });
             }
-            return null;
-        }
 
-        // Stooq API Backup Fetcher
-        async function fetchStooqQuote(symbol) {
-            const targetUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(symbol)}&f=sdal212&e=json`;
-            const proxyGenerators = [
-                url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-                url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
-            ];
+            if (targetStocks.length === 0) {
+                throw new Error('更新対象の銘柄が登録されていません');
+            }
 
-            for (const getProxyUrl of proxyGenerators) {
-                try {
-                    const proxyUrl = getProxyUrl(targetUrl);
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`;
 
-                    const res = await fetch(proxyUrl, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        const item = data?.symbols?.[0];
-                        if (item && item.close && typeof item.close === 'number' && item.close > 0) {
-                            return item.close;
-                        }
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/vnd.github+json',
+                    'Authorization': `Bearer ${token}`,
+                    'X-GitHub-Api-Version': '2022-11-28'
+                },
+                body: JSON.stringify({
+                    ref: 'main',
+                    inputs: {
+                        stocks: JSON.stringify(targetStocks)
                     }
-                } catch (e) {
-                    // Try next fallback
-                }
+                })
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('gh_pat');
+                throw new Error('トークンが無効または権限不足です。再度お試しください。');
             }
-            return null;
+
+            if (!response.ok) {
+                throw new Error(`Actions起動失敗 (Status: ${response.status})`);
+            }
         }
 
         async function fetchAllLatestQuotes() {
-            if (appData.holdings.length === 0) {
-                showToast('保有銘柄が登録されていません', 'warning');
-                return;
-            }
-
             const btn = document.getElementById('btn-fetch-all');
             const icon = document.getElementById('icon-refresh');
-            
-            btn.disabled = true;
-            icon.classList.add('fa-spin');
 
-            showToast('為替および最新株価を取得中...');
-
-            let fxMap = { 'JPY': 1.0 };
+            if (btn) btn.disabled = true;
+            if (icon) icon.classList.add('fa-spin');
 
             try {
-                const fxRes = await fetch('https://open.er-api.com/v6/latest/USD');
-                if (fxRes.ok) {
-                    const fxData = await fxRes.json();
-                    if (fxData && fxData.rates) {
-                        const usdJpy = fxData.rates.JPY;
-                        const usdKrw = fxData.rates.KRW;
-                        if (usdJpy) fxMap['USD'] = usdJpy;
-                        if (usdJpy && usdKrw) fxMap['KR'] = usdJpy / usdKrw;
+                let lastUpdatedAt = '';
+                try {
+                    const initRes = await fetch(`./prices.json?t=${Date.now()}`);
+                    if (initRes.ok) {
+                        const initData = await initRes.json();
+                        lastUpdatedAt = initData.updatedAt || '';
+                    }
+                } catch (e) {
+                    // prices.json が未作成の場合は無視
+                }
+
+                showToast('GitHub Actionsで株価更新を起動中...');
+
+                await triggerGitHubAction();
+
+                showToast('株価を取得中...（約20〜30秒かかります）');
+
+                let updated = false;
+                for (let i = 0; i < 12; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+
+                    const res = await fetch(`./prices.json?t=${Date.now()}`);
+                    if (res.ok) {
+                        const currentData = await res.json();
+                        if (currentData.updatedAt && currentData.updatedAt !== lastUpdatedAt) {
+                            applyPricesToApp(currentData);
+                            updated = true;
+                            showToast(`株価を更新しました（${new Date(currentData.updatedAt).toLocaleTimeString('ja-JP')}）`);
+                            break;
+                        }
                     }
                 }
-            } catch (err) {
-                console.warn('FX API Error:', err);
-            }
 
-            let updatedCount = 0;
-            let total = appData.holdings.length;
-
-            for (let i = 0; i < total; i++) {
-                let stock = appData.holdings[i];
-                showToast(`株価更新中 (${i + 1}/${total}): ${stock.name}...`);
-
-                if (stock.market === 'US' && fxMap['USD']) stock.curFx = fxMap['USD'];
-                if (stock.market === 'KR' && fxMap['KR']) stock.curFx = fxMap['KR'];
-
-                const newPrice = await fetchStockQuote(stock.code, stock.market);
-                if (newPrice !== null && newPrice > 0) {
-                    stock.curPrice = newPrice;
-                    updatedCount++;
+                if (!updated) {
+                    showToast('更新確認がタイムアウトしました。数十秒後に再読み込みしてください。', 'warning');
                 }
+
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || '株価の更新に失敗しました', 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+                if (icon) icon.classList.remove('fa-spin');
             }
+        }
+
+        function applyPricesToApp(data) {
+            if (!appData || !appData.holdings) return;
+
+            appData.holdings.forEach(stock => {
+                const key = `${stock.market}_${stock.code}`;
+                if (data.prices && data.prices[key] !== undefined && data.prices[key] !== null) {
+                    stock.curPrice = data.prices[key];
+                }
+                if (stock.market === 'US' && data.fx?.USD) stock.curFx = data.fx.USD;
+                if (stock.market === 'KR' && data.fx?.KRW) stock.curFx = data.fx.KRW;
+            });
 
             saveData();
             renderApp();
-
-            btn.disabled = false;
-            icon.classList.remove('fa-spin');
-
-            if (updatedCount === total) {
-                showToast(`全 ${updatedCount} 件の株価・為替を更新しました`);
-            } else if (updatedCount > 0) {
-                showToast(`${updatedCount}/${total} 件を更新しました（失敗した項目は手動編集可）`, 'warning');
-            } else {
-                showToast('株価の自動更新に失敗しました。手動で直接編集可能です', 'error');
-            }
         }
 
-        function openBackupModal() { openModal('modal-backup'); }
-
-        function exportJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
-            const downloadAnchor = document.createElement('a');
-            const dateStr = new Date().toISOString().split('T')[0];
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `yumekabu_backup_${dateStr}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-            showToast('JSONデータをダウンロードしました');
-        }
-
-        function importJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (imported && Array.isArray(imported.holdings) && Array.isArray(imported.soldHistory)) {
-                        appData = imported;
-                        saveData();
-                        renderApp();
-                        closeModal('modal-backup');
-                        showToast('復元が完了しました');
-                    } else {
-                        showToast('無効なファイル形式です', 'error');
-                    }
-                } catch (err) {
-                    showToast('読み込みに失敗しました', 'error');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function showToast(message, type = 'success') {
+        // ==========================================
+        // 簡易トーストUI
+        // ==========================================
+        function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
+            toast.className = `toast text-white text-sm px-4 py-3 rounded-lg shadow-lg pointer-events-auto flex items-center ${type === 'error' ? 'bg-rose-600' : (type === 'warning' ? 'bg-amber-600' : 'bg-slate-800')}`;
+            toast.innerHTML = `<span>${message}</span>`;
             
-            let bgClass = 'bg-slate-900 border-blue-500 text-blue-300';
-            let iconClass = 'fa-circle-check text-emerald-400';
-
-            if (type === 'error') {
-                bgClass = 'bg-slate-900 border-rose-500 text-rose-300';
-                iconClass = 'fa-circle-exclamation text-rose-400';
-            } else if (type === 'warning') {
-                bgClass = 'bg-slate-900 border-amber-500 text-amber-300';
-                iconClass = 'fa-triangle-exclamation text-amber-400';
-            }
-
-            toast.className = `pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-xl border shadow-2xl backdrop-blur text-xs font-semibold transform transition-all duration-300 translate-y-4 opacity-0 ${bgClass}`;
-            toast.innerHTML = `<i class="fa-solid ${iconClass} text-sm shrink-0"></i> <span>${escapeHTML(message)}</span>`;
-
             container.appendChild(toast);
-
-            setTimeout(() => { toast.classList.remove('translate-y-4', 'opacity-0'); }, 10);
             setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
+                toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>'"]/g, 
-                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-            );
+            }, 4000);
         }
     </script>
 </body>
