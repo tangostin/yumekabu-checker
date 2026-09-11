@@ -330,7 +330,8 @@
 
                 <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5">
                     <div class="font-bold text-white">復元（ファイル読込）</div>
-                    <input type="file" id="json-file-input" accept=".json" class="hidden" onchange="importJSON(event)">
+                    <!-- iOS Safariで.jsonファイルがグレーアウトしないよう accept 属性を調整 -->
+                    <input type="file" id="json-file-input" accept=".json,application/json,text/plain,*/*" class="hidden" onchange="importJSON(event)">
                     <button onclick="document.getElementById('json-file-input').click()" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition border border-slate-700">
                         ファイルを選択して復元
                     </button>
@@ -1266,15 +1267,30 @@
         function openBackupModal() { openModal('modal-backup'); }
 
         function exportJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
-            const downloadAnchor = document.createElement('a');
-            const dateStr = new Date().toISOString().split('T')[0];
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `yumekabu_backup_${dateStr}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-            showToast('JSONデータをダウンロードしました');
+            try {
+                const dataStr = JSON.stringify(appData, null, 2);
+                // iOS Safariでもダウンロードダイアログが開くようBlobオブジェクトを作成
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const dateStr = new Date().toISOString().split('T')[0];
+
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", url);
+                downloadAnchor.setAttribute("download", `yumekabu_backup_${dateStr}.json`);
+                downloadAnchor.setAttribute("target", "_blank");
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+
+                setTimeout(() => {
+                    downloadAnchor.remove();
+                    URL.revokeObjectURL(url);
+                }, 1000);
+
+                showToast('JSONファイルを保存しました');
+            } catch (e) {
+                console.error(e);
+                showToast('ファイルの保存に失敗しました', 'error');
+            }
         }
 
         function importJSON(event) {
