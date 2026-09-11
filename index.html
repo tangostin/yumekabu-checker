@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>夢株チェッカー</title>
+    <title>夢株</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@500;700;800&display=swap" rel="stylesheet">
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -41,8 +42,8 @@
                 <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
                     <i class="fa-solid fa-chart-line text-white text-sm"></i>
                 </div>
-                <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent whitespace-nowrap truncate">
-                    夢株チェッカー
+                <h1 class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent whitespace-nowrap">
+                    夢株
                 </h1>
             </div>
 
@@ -172,13 +173,13 @@
                     </div>
                     <div>
                         <label class="block text-slate-400 font-semibold mb-1">コード <span class="text-rose-500">*</span></label>
-                        <input type="text" id="stock-code" required placeholder="7203, AAPL" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 uppercase">
+                        <input type="text" id="stock-code" required placeholder="1478, 7203, AAPL" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 uppercase">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-slate-400 font-semibold mb-1">銘柄名 <span class="text-rose-500">*</span></label>
-                    <input type="text" id="stock-name" required placeholder="例: トヨタ自動車" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500">
+                    <input type="text" id="stock-name" required placeholder="例: NEXT FUNDS 日本高配当株" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500">
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -351,15 +352,27 @@
         let currentTab = 'holdings';
         let currentMarketFilter = 'ALL';
 
-        // Sample initial seed data
+        // Sample initial seed data including ETF 1478
         const SAMPLE_DATA = {
             holdings: [
                 {
                     id: 'h_1',
                     market: 'JP',
+                    code: '1478',
+                    name: 'iFreeETF 日本高配当株',
+                    acqDate: '2023-05-15',
+                    qty: 50,
+                    acqPrice: 2800,
+                    acqFx: 1.0,
+                    curPrice: 3450,
+                    curFx: 1.0
+                },
+                {
+                    id: 'h_2',
+                    market: 'JP',
                     code: '7203',
                     name: 'トヨタ自動車',
-                    acqDate: '2023-05-15',
+                    acqDate: '2023-06-20',
                     qty: 100,
                     acqPrice: 2050,
                     acqFx: 1.0,
@@ -367,7 +380,7 @@
                     curFx: 1.0
                 },
                 {
-                    id: 'h_2',
+                    id: 'h_3',
                     market: 'US',
                     code: 'AAPL',
                     name: 'Apple Inc.',
@@ -425,7 +438,6 @@
             }
         }
 
-        // Formatter Utilities
         function formatNumber(num, decimals = 2) {
             if (num === null || num === undefined || isNaN(num)) return '0';
             return new Intl.NumberFormat('ja-JP', {
@@ -481,14 +493,11 @@
             }
         }
 
-        // Standard pill capsule style (All blue-themed)
         const PILL_BLUE_CLASS = "w-20 shrink-0 py-1 px-2 rounded-lg bg-blue-950 text-blue-300 border border-blue-800/80 text-center font-bold text-[11px]";
 
-        // Calculations
         function calcCostJPY(price, qty, fx) { return price * qty * fx; }
         function calcValueJPY(price, qty, fx) { return price * qty * fx; }
 
-        // Master Render
         function renderApp() {
             renderSummarySection();
             renderHoldingsList();
@@ -496,7 +505,6 @@
             updateFilterButtonUI();
         }
 
-        // Render Summary Section
         function renderSummarySection() {
             const filteredHoldings = appData.holdings.filter(h => currentMarketFilter === 'ALL' || h.market === currentMarketFilter);
             const filteredSold = appData.soldHistory.filter(s => currentMarketFilter === 'ALL' || s.market === currentMarketFilter);
@@ -523,19 +531,16 @@
             const aValJPY = hValJPY + sValJPY;
             const aPlJPY = hPlJPY + sPlJPY;
 
-            // 保有株式
             const hPct = hCostJPY > 0 ? (hPlJPY / hCostJPY) * 100 : 0;
             document.getElementById('sum-h-cost').innerText = formatJPY(hCostJPY);
             document.getElementById('sum-h-val').innerText = formatJPY(hValJPY);
             setPLStyle('sum-h-pl', hPlJPY, hPct);
 
-            // 売却株式
             const sPct = sCostJPY > 0 ? (sPlJPY / sCostJPY) * 100 : 0;
             document.getElementById('sum-s-cost').innerText = formatJPY(sCostJPY);
             document.getElementById('sum-s-val').innerText = formatJPY(sValJPY);
             setPLStyle('sum-s-pl', sPlJPY, sPct);
 
-            // 全株式
             const aPct = aCostJPY > 0 ? (aPlJPY / aCostJPY) * 100 : 0;
             document.getElementById('sum-a-cost').innerText = formatJPY(aCostJPY);
             document.getElementById('sum-a-val').innerText = formatJPY(aValJPY);
@@ -557,7 +562,6 @@
             else el.className = 'font-bold text-slate-300';
         }
 
-        // Render Holdings List
         function renderHoldingsList() {
             const container = document.getElementById('holdings-list-container');
             const emptyState = document.getElementById('holdings-empty');
@@ -587,7 +591,6 @@
                 card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5 shadow-lg";
 
                 card.innerHTML = `
-                    <!-- Header -->
                     <div class="flex items-center justify-between border-b border-slate-800 pb-2">
                         <div class="flex items-center gap-1.5 min-w-0 pr-1">
                             ${getMarketBadgeHTML(item.market)}
@@ -607,9 +610,7 @@
                         </div>
                     </div>
 
-                    <!-- Layout List -->
                     <div class="space-y-1.5 text-xs">
-                        <!-- 1. 保有株数 + 取得日 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">保有株数</span>
                             <div class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-white text-xs">
@@ -617,7 +618,6 @@
                             </div>
                         </div>
 
-                        <!-- 2. 株価 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">株価</span>
                             <div class="grid grid-cols-2 gap-1.5 flex-1">
@@ -632,7 +632,6 @@
                             </div>
                         </div>
 
-                        <!-- 3. 為替 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">為替</span>
                             <div class="grid grid-cols-2 gap-1.5 flex-1">
@@ -647,7 +646,6 @@
                             </div>
                         </div>
 
-                        <!-- 4. 評価額 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">評価額</span>
                             <div class="grid grid-cols-2 gap-1.5 flex-1">
@@ -662,7 +660,6 @@
                             </div>
                         </div>
 
-                        <!-- 5. 評価損益 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">評価損益</span>
                             <div class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-xs ${foreignPL >= 0 ? 'text-emerald-400' : 'text-rose-400'} truncate">
@@ -670,7 +667,6 @@
                             </div>
                         </div>
 
-                        <!-- 6. 評価額(円) -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">評価額(円)</span>
                             <div class="grid grid-cols-2 gap-1.5 flex-1">
@@ -685,7 +681,6 @@
                             </div>
                         </div>
 
-                        <!-- 7. 損益(円) -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">損益(円)</span>
                             <div class="flex-1 bg-slate-950/80 border ${jpyPL >= 0 ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-rose-500/30 bg-rose-950/10'} rounded-lg px-2.5 py-1 text-right font-mono font-extrabold text-xs sm:text-sm ${jpyPL >= 0 ? 'text-emerald-400' : 'text-rose-400'} truncate">
@@ -698,7 +693,6 @@
             });
         }
 
-        // Render Sold History List
         function renderSoldList() {
             const container = document.getElementById('sold-list-container');
             const emptyState = document.getElementById('sold-empty');
@@ -740,7 +734,6 @@
                     </div>
 
                     <div class="space-y-1.5 text-xs">
-                        <!-- 1. 売却株数 + 取得日 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">売却株数</span>
                             <div class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-white text-xs">
@@ -748,7 +741,6 @@
                             </div>
                         </div>
 
-                        <!-- 2. 株価 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">株価</span>
                             <div class="grid grid-cols-2 gap-1.5 flex-1">
@@ -763,7 +755,6 @@
                             </div>
                         </div>
 
-                        <!-- 3. 為替 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">為替</span>
                             <div class="grid grid-cols-2 gap-1.5 flex-1">
@@ -778,7 +769,6 @@
                             </div>
                         </div>
 
-                        <!-- 4. 売却額 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">売却額</span>
                             <div class="grid grid-cols-2 gap-1.5 flex-1">
@@ -793,7 +783,6 @@
                             </div>
                         </div>
 
-                        <!-- 5. 実現損益 -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">実現損益</span>
                             <div class="flex-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-right font-mono font-bold text-xs ${foreignPL >= 0 ? 'text-emerald-400' : 'text-rose-400'} truncate">
@@ -801,7 +790,6 @@
                             </div>
                         </div>
 
-                        <!-- 6. 売却額(円) -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">売却額(円)</span>
                             <div class="grid grid-cols-2 gap-1.5 flex-1">
@@ -816,7 +804,6 @@
                             </div>
                         </div>
 
-                        <!-- 7. 損益(円) -->
                         <div class="flex items-center gap-2">
                             <span class="${PILL_BLUE_CLASS}">損益(円)</span>
                             <div class="flex-1 bg-slate-950/80 border ${jpyPL >= 0 ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-rose-500/30 bg-rose-950/10'} rounded-lg px-2.5 py-1 text-right font-mono font-extrabold text-xs sm:text-sm ${jpyPL >= 0 ? 'text-emerald-400' : 'text-rose-400'} truncate">
@@ -865,7 +852,6 @@
             });
         }
 
-        // Modal Helpers
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
@@ -1074,18 +1060,22 @@
             openModal('modal-confirm');
         }
 
-        // Multi-Source Stock Price Fetcher (Yahoo Finance + Stooq Fallback)
         async function fetchStockQuote(code, market) {
-            let yahooSymbol = code;
-            if (market === 'JP' && !yahooSymbol.includes('.')) yahooSymbol += '.T';
-            else if (market === 'KR' && !yahooSymbol.includes('.')) yahooSymbol += '.KS';
+            let cleanCode = code.trim().toUpperCase();
+            let yahooSymbol = cleanCode;
 
-            // Source 1: Yahoo Finance Chart API
+            if (market === 'JP') {
+                if (!cleanCode.includes('.')) yahooSymbol = cleanCode + '.T';
+            } else if (market === 'KR') {
+                if (!cleanCode.includes('.')) yahooSymbol = cleanCode + '.KS';
+            }
+
+            // Source 1: Yahoo Finance Chart API with CORS Proxies & Fallbacks
             const yahooPrice = await fetchYahooQuote(yahooSymbol);
             if (yahooPrice !== null && yahooPrice > 0) return yahooPrice;
 
-            // Source 2: Stooq API Fallback (High reliability for US/JP stocks)
-            let stooqSymbol = code.toLowerCase();
+            // Source 2: Stooq API Fallback (Enhanced format mapping)
+            let stooqSymbol = cleanCode.toLowerCase();
             if (market === 'JP') stooqSymbol += '.jp';
             else if (market === 'US') stooqSymbol += '.us';
             else if (market === 'KR') stooqSymbol += '.kr';
@@ -1096,55 +1086,77 @@
             return null;
         }
 
-        // Yahoo Finance CORS Proxy Fetcher with flexible property parsing
+        // Robust Yahoo Fetcher using multiple Yahoo Hosts + Multiple High-Speed CORS Proxies
         async function fetchYahooQuote(symbol) {
-            const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
-            
-            const proxyGenerators = [
-                url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-                url => `https://thingproxy.freeboard.io/fetch/${url}`
+            const yahooHosts = [
+                `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`,
+                `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`
             ];
 
-            for (const getProxyUrl of proxyGenerators) {
-                try {
-                    const proxyUrl = getProxyUrl(targetUrl);
-                    const res = await fetch(proxyUrl);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const result = data?.chart?.result?.[0];
-                        if (result) {
-                            // 1. Regular Market Price
-                            if (result.meta?.regularMarketPrice) return result.meta.regularMarketPrice;
-                            // 2. Previous Close Price (Fallback for outside market hours)
-                            if (result.meta?.chartPreviousClose) return result.meta.chartPreviousClose;
-                            // 3. Last close price from candle indicators
-                            const closes = result.indicators?.quote?.[0]?.close;
-                            if (Array.isArray(closes)) {
-                                const validCloses = closes.filter(c => c !== null && c !== undefined && typeof c === 'number');
-                                if (validCloses.length > 0) return validCloses[validCloses.length - 1];
+            const proxyGenerators = [
+                url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+                url => `https://corsproxy.org/?${encodeURIComponent(url)}`
+            ];
+
+            for (const targetUrl of yahooHosts) {
+                for (const getProxyUrl of proxyGenerators) {
+                    try {
+                        const proxyUrl = getProxyUrl(targetUrl);
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 3500); // Fast 3.5s timeout per attempt
+
+                        const res = await fetch(proxyUrl, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            const result = data?.chart?.result?.[0];
+                            if (result) {
+                                const meta = result.meta;
+                                if (meta?.regularMarketPrice && meta.regularMarketPrice > 0) {
+                                    return meta.regularMarketPrice;
+                                }
+                                if (meta?.chartPreviousClose && meta.chartPreviousClose > 0) {
+                                    return meta.chartPreviousClose;
+                                }
+                                if (meta?.previousClose && meta.previousClose > 0) {
+                                    return meta.previousClose;
+                                }
+                                const closes = result.indicators?.quote?.[0]?.close;
+                                if (Array.isArray(closes)) {
+                                    const validCloses = closes.filter(c => c !== null && c !== undefined && typeof c === 'number' && c > 0);
+                                    if (validCloses.length > 0) return validCloses[validCloses.length - 1];
+                                }
                             }
                         }
+                    } catch (e) {
+                        // Suppress timeout errors and try next proxy
                     }
-                } catch (e) {
-                    console.warn(`Yahoo proxy failed for ${symbol}:`, e);
                 }
             }
             return null;
         }
 
-        // Stooq API Fallback Fetcher
+        // Stooq API Backup Fetcher
         async function fetchStooqQuote(symbol) {
             const targetUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(symbol)}&f=sdal212&e=json`;
             const proxyGenerators = [
+                url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
                 url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                url => `https://corsproxy.io/?${encodeURIComponent(url)}`
+                url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
             ];
 
             for (const getProxyUrl of proxyGenerators) {
                 try {
                     const proxyUrl = getProxyUrl(targetUrl);
-                    const res = await fetch(proxyUrl);
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+                    const res = await fetch(proxyUrl, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+
                     if (res.ok) {
                         const data = await res.json();
                         const item = data?.symbols?.[0];
@@ -1153,23 +1165,26 @@
                         }
                     }
                 } catch (e) {
-                    console.warn(`Stooq proxy failed for ${symbol}:`, e);
+                    // Try next fallback
                 }
             }
             return null;
         }
 
-        // API Fetching for Quotes and FX
         async function fetchAllLatestQuotes() {
+            if (appData.holdings.length === 0) {
+                showToast('保有銘柄が登録されていません', 'warning');
+                return;
+            }
+
             const btn = document.getElementById('btn-fetch-all');
             const icon = document.getElementById('icon-refresh');
             
             btn.disabled = true;
             icon.classList.add('fa-spin');
 
-            showToast('最新株価・為替を取得中...');
+            showToast('為替および最新株価を取得中...');
 
-            let updatedCount = 0;
             let fxMap = { 'JPY': 1.0 };
 
             try {
@@ -1187,12 +1202,18 @@
                 console.warn('FX API Error:', err);
             }
 
-            for (let stock of appData.holdings) {
+            let updatedCount = 0;
+            let total = appData.holdings.length;
+
+            for (let i = 0; i < total; i++) {
+                let stock = appData.holdings[i];
+                showToast(`株価更新中 (${i + 1}/${total}): ${stock.name}...`);
+
                 if (stock.market === 'US' && fxMap['USD']) stock.curFx = fxMap['USD'];
                 if (stock.market === 'KR' && fxMap['KR']) stock.curFx = fxMap['KR'];
 
                 const newPrice = await fetchStockQuote(stock.code, stock.market);
-                if (newPrice !== null) {
+                if (newPrice !== null && newPrice > 0) {
                     stock.curPrice = newPrice;
                     updatedCount++;
                 }
@@ -1204,14 +1225,15 @@
             btn.disabled = false;
             icon.classList.remove('fa-spin');
 
-            if (updatedCount > 0) {
-                showToast(`${updatedCount}件の最新株価・為替を更新しました`);
+            if (updatedCount === total) {
+                showToast(`全 ${updatedCount} 件の株価・為替を更新しました`);
+            } else if (updatedCount > 0) {
+                showToast(`${updatedCount}/${total} 件を更新しました（失敗した項目は手動編集可）`, 'warning');
             } else {
-                showToast('自動取得に失敗した項目は手動で編集可能です', 'warning');
+                showToast('株価の自動更新に失敗しました。手動で直接編集可能です', 'error');
             }
         }
 
-        // Backup Modal Logic
         function openBackupModal() { openModal('modal-backup'); }
 
         function exportJSON() {
@@ -1250,7 +1272,6 @@
             reader.readAsText(file);
         }
 
-        // Toast Notification System
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
