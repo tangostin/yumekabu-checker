@@ -1405,11 +1405,11 @@
 
                 await triggerGitHubAction();
 
-                showToast('株価を取得中...（約20〜30秒かかります）');
+                showToast('株価を取得中...（約60～120秒かかります）');
 
                 let updated = false;
                 for (let i = 0; i < 12; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    await new Promise(resolve => setTimeout(resolve, 10000));
 
                     const res = await fetch(`./prices.json?t=${Date.now()}`);
                     if (res.ok) {
