@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>夢株 - ポートフォリオチェッカー</title>
+　　<div id="lastUpdatedDisplay">最終更新：--</div>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
@@ -30,6 +31,7 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
         .tab-btn.active { border-color: #3b82f6; color: #60a5fa; background-color: rgba(30, 58, 138, 0.3); }
+　　　　#lastUpdatedDisplay {text-align: center;font-size: 12px;color: #888;margin-top: 4px;margin-bottom: 10px;}
     </style>
 </head>
 <body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 selection:bg-blue-600 selection:text-white max-w-md mx-auto border-x border-slate-800 shadow-2xl">
@@ -1396,6 +1398,8 @@
                     if (initRes.ok) {
                         const initData = await initRes.json();
                         lastUpdatedAt = initData.updatedAt || '';
+                        document.getElementById('lastUpdatedDisplay').textContent =
+                       `最終更新：${new Date(initData.updatedAt).toLocaleString('ja-JP')}`;
                     }
                 } catch (e) {
                     // prices.json 未存在時はスルー
@@ -1405,7 +1409,7 @@
 
                 await triggerGitHubAction();
 
-                showToast('株価を取得中...（約60～120秒かかります）');
+                showToast('株価を取得中...（約60〜120秒かかります）');
 
                 let updated = false;
                 for (let i = 0; i < 12; i++) {
@@ -1417,6 +1421,8 @@
                         if (currentData.updatedAt && currentData.updatedAt !== lastUpdatedAt) {
                             applyPricesToApp(currentData);
                             updated = true;
+                            document.getElementById('lastUpdatedDisplay').textContent =
+    `                           最終更新：${new Date(currentData.updatedAt).toLocaleString('ja-JP')}`;
                             showToast(`株価を更新しました（${new Date(currentData.updatedAt).toLocaleTimeString('ja-JP')}）`);
                             break;
                         }
