@@ -434,13 +434,27 @@
             soldHistory: []
         };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadData();
-            document.getElementById('stock-acq-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('sell-date').value = new Date().toISOString().split('T')[0];
-            updatePATStatusUI();
-            renderApp();
-        });
+　　　　document.addEventListener('DOMContentLoaded', async () => {
+   　　　　 loadData();
+
+ 　　　　   try {
+  　　　　      const res = await fetch(`./prices.json?t=${Date.now()}`);
+   　　　　     if (res.ok) {
+      　　　　      const data = await res.json();
+      　　　　      if (data.updatedAt) {
+      　　　　          document.getElementById('lastUpdatedDisplay').textContent =
+      　　　　              `最終更新：${new Date(data.updatedAt).toLocaleString('ja-JP')}`;
+      　　　　      }
+      　　　　  }
+  　　　　  } catch (e) {
+   　　　　     // prices.json が取得できない場合はスルー
+ 　　　　   }
+
+ 　　　　   document.getElementById('stock-acq-date').value = new Date().toISOString().split('T')[0];
+  　　　　  document.getElementById('sell-date').value = new Date().toISOString().split('T')[0];
+  　　　　  updatePATStatusUI();
+  　　　　  renderApp();
+　　　　});
 
         function loadData() {
             try {
